@@ -10,7 +10,7 @@ devices:
     breadboard: {role: rail}
   - type: tmc2209
     name: D1
-    breadboard: {column: 8, role: module}
+    breadboard: {role: module}
 connections:
   - {board_pin: 1, device: Rails, device_pin: "+3V3", color: "#F08C00"}
   - {board_pin: 36, device: D1, device_pin: STEP, color: "#E2B000"}

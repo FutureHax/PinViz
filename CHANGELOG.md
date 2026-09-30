@@ -8,8 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Breadboard layout** (`layout: breadboard`) draws the board artwork, a solderless breadboard, and plug-in modules seated on the holes, with colored jumper wires. Schematic layout is unchanged.
-- Devices: `tmc2209` (16-pin stepstick, BIGTREETECH V1.3 silkscreen order), `nema17` (four leads), `psu_24v` (two-terminal motor supply), `electrolytic` (polarized capacitor), and `breadboard_rail` (the breadboard power strips). A device opts in with a `breadboard` seat (`column` plus `role`: module, motor, supply, capacitor, or rail).
+- **Breadboard layout** (`layout: breadboard`) draws the board artwork beside an upright solderless breadboard with plug-in modules seated on its holes, and colored jumper wires. Schematic layout is unchanged.
+  - Modules stack top to bottom in YAML order, so listing them in header order keeps their wire ribbons from crossing.
+  - Each module's header wires travel as one parallel ribbon, with a white halo and a fixed lane spacing.
+  - Rail power is drawn as short stubs; motors sit beside their own module with straight coil leads; a polarized capacitor plugs into two rails with its stripe marked.
+  - Logic and motor ground rails are tied at the bottom of the board when motor ground is used.
+  - Rendering fails when any device has no connection, so a floating part cannot be drawn.
+- Devices: `tmc2209` (16-pin stepstick, BIGTREETECH V1.3 silkscreen order), `nema17` (four leads), `psu_24v` (two-terminal motor supply), `electrolytic` (polarized capacitor), and `breadboard_rail` (GND, +3V3, MGND, and +24V strips). A device opts in with a `breadboard` seat (`role`: module, motor, supply, capacitor, or rail, plus an optional first `row`).
 
 
 ## [0.19.0] - 2026-07-07

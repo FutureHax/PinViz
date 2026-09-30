@@ -249,12 +249,13 @@ class CustomDeviceSchema(BaseModel):
 class BreadboardPlacementSchema(BaseModel):
     """Where a device sits when ``layout`` is ``breadboard``.
 
-    ``column`` is the 1-based breadboard column of the module's first pin.
+    ``row`` is the 0-based breadboard row of the module's first pin. When it
+    is omitted, modules stack top to bottom in YAML order.
     ``role`` selects the pictorial: a plug-in module, a motor beside the
     board, the supply, the capacitor, or the power rails themselves.
     """
 
-    column: Annotated[int, Field(ge=1, le=63)] | None = None
+    row: Annotated[int, Field(ge=0, le=62)] | None = None
     role: Literal["module", "motor", "supply", "capacitor", "rail"] = "module"
 
     model_config = ConfigDict(extra="forbid")

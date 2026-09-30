@@ -2,11 +2,29 @@
   "id": "breadboard_rail",
   "name": "Breadboard rails",
   "category": "power",
-  "description": "The three distribution rails of a solderless breadboard: motor positive, ground, and logic 3.3 V.",
+  "description": "The four distribution rails of an upright solderless breadboard: logic ground and 3.3 V on the left, motor ground and motor supply on the right.",
+  "datasheet_url": "https://en.wikipedia.org/wiki/Breadboard",
   "pins": [
-    {"name": "+24V", "role": "5V", "side": "left"},
-    {"name": "GND", "role": "GND", "side": "left"},
-    {"name": "+3V3", "role": "3V3", "side": "left"}
+    {
+      "name": "GND",
+      "role": "GND",
+      "side": "left"
+    },
+    {
+      "name": "+3V3",
+      "role": "3V3",
+      "side": "left"
+    },
+    {
+      "name": "MGND",
+      "role": "GND",
+      "side": "right"
+    },
+    {
+      "name": "+24V",
+      "role": "5V",
+      "side": "right"
+    }
   ],
-  "notes": "Used by layout: breadboard. The renderer draws these as the breadboard power strips instead of a device box. +24V uses the 5V role because PinViz has no 24 V role."
+  "notes": "Used by layout: breadboard. The renderer draws these as the breadboard power strips instead of a device box. The renderer ties GND to MGND whenever MGND is used. +24V uses the 5V role because PinViz has no 24 V role."
 }
