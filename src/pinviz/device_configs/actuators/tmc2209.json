@@ -1,0 +1,25 @@
+{
+  "id": "tmc2209",
+  "name": "TMC2209 stepstick",
+  "category": "actuators",
+  "description": "16-pin TMC2209 stepstick in standalone STEP/DIR. Pin order matches the BIGTREETECH V1.3 silkscreen, both columns top to bottom.",
+  "pins": [
+    {"name": "EN", "role": "GPIO", "side": "left"},
+    {"name": "MS1", "role": "3V3", "side": "left"},
+    {"name": "MS2", "role": "3V3", "side": "left"},
+    {"name": "RX", "role": "GPIO", "side": "left"},
+    {"name": "TX", "role": "GPIO", "side": "left"},
+    {"name": "CLK", "role": "GPIO", "side": "left"},
+    {"name": "STEP", "role": "GPIO", "side": "left"},
+    {"name": "DIR", "role": "GPIO", "side": "left"},
+    {"name": "VM", "role": "5V", "side": "right"},
+    {"name": "VMGND", "role": "GND", "side": "right"},
+    {"name": "A2", "role": "GPIO", "side": "right"},
+    {"name": "A1", "role": "GPIO", "side": "right"},
+    {"name": "B1", "role": "GPIO", "side": "right"},
+    {"name": "B2", "role": "GPIO", "side": "right"},
+    {"name": "VIO", "role": "3V3", "side": "right"},
+    {"name": "IOGND", "role": "GND", "side": "right"}
+  ],
+  "notes": "Breadboard footprint is a 2x8 header, 0.1 inch along the length and 0.6 inch between the two rows, so it straddles a solderless breadboard from row b to row f. MS1 and MS2 both at VIO is 1/16. VM is the motor supply (the 5V role is the nearest PinViz power role; label it 24 V in the diagram)."
+}

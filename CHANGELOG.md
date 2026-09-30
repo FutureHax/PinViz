@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Breadboard layout** (`layout: breadboard`) draws the board artwork, a solderless breadboard, and plug-in modules seated on the holes, with colored jumper wires. Schematic layout is unchanged.
+- Devices: `tmc2209` (16-pin stepstick, BIGTREETECH V1.3 silkscreen order), `nema17` (four leads), `psu_24v` (two-terminal motor supply), `electrolytic` (polarized capacitor), and `breadboard_rail` (the breadboard power strips). A device opts in with a `breadboard` seat (`column` plus `role`: module, motor, supply, capacitor, or rail).
+
 
 ## [0.19.0] - 2026-07-07
 

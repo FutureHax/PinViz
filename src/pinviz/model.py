@@ -342,6 +342,7 @@ class Device:
     url: str | None = None
     category: str | None = None
     i2c_address: int | None = None
+    placement: dict | None = None  # Breadboard seat, set from YAML ``breadboard``
 
     def get_pin_by_name(self, name: str) -> DevicePin | None:
         """
@@ -709,3 +710,4 @@ class Diagram:
     theme: Theme = Theme.LIGHT
     canvas_width: float = 800.0
     canvas_height: float = 600.0
+    layout_mode: str = "schematic"

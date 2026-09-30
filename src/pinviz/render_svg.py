@@ -112,6 +112,13 @@ class SVGRenderer:
             connection_count=len(diagram.connections),
         )
 
+        if diagram.layout_mode == "breadboard":
+            from .breadboard import BreadboardRenderer
+
+            BreadboardRenderer().render(diagram, output_path)
+            log.info("render_completed", output_path=str(output_path), layout="breadboard")
+            return
+
         # Get color scheme from theme
         color_scheme = get_color_scheme(diagram.theme)
 

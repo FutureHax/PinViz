@@ -21,7 +21,7 @@ Examples:
     My Diagram
 """
 
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 from pydantic import (
     BaseModel,
@@ -114,6 +114,11 @@ VALID_DEVICE_TYPES = {
     "tsl2561",
     "uln2003",
     "vl53l0x",
+    "tmc2209",
+    "nema17",
+    "psu_24v",
+    "electrolytic",
+    "breadboard_rail",
 }
 
 # Valid pin roles
@@ -241,6 +246,20 @@ class CustomDeviceSchema(BaseModel):
         return self
 
 
+class BreadboardPlacementSchema(BaseModel):
+    """Where a device sits when ``layout`` is ``breadboard``.
+
+    ``column`` is the 1-based breadboard column of the module's first pin.
+    ``role`` selects the pictorial: a plug-in module, a motor beside the
+    board, the supply, the capacitor, or the power rails themselves.
+    """
+
+    column: Annotated[int, Field(ge=1, le=63)] | None = None
+    role: Literal["module", "motor", "supply", "capacitor", "rail"] = "module"
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class PredefinedDeviceSchema(BaseModel):
     """Schema for predefined device type.
 
@@ -264,6 +283,7 @@ class PredefinedDeviceSchema(BaseModel):
     has_int_pin: bool | None = None  # alias for has_interrupt
     color: Annotated[str, Field(max_length=50)] | None = None  # for led
     pull_up: bool | None = None  # for button
+    breadboard: BreadboardPlacementSchema | None = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -656,6 +676,7 @@ class DiagramConfigSchema(BaseModel):
     show_title: bool = True
     show_board_name: bool = True
     theme: Annotated[str, Field(description="Theme: light or dark")] = "light"
+    layout: Literal["schematic", "breadboard"] = "schematic"
 
     model_config = ConfigDict(extra="forbid")
 

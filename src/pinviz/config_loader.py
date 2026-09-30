@@ -269,6 +269,7 @@ class ConfigLoader:
             .with_options(options)
             .build()
         )
+        diagram.layout_mode = validated_config.layout
 
         # Run electrical safety validation (voltage, pin compatibility, etc.)
         electrical_issues = DiagramValidator().validate(diagram)
@@ -399,6 +400,10 @@ class ConfigLoader:
                 # Override device description if specified
                 if "description" in config:
                     device.description = config["description"]
+
+                if "breadboard" in config:
+                    seat = config["breadboard"]
+                    device.placement = seat if isinstance(seat, dict) else dict(seat)
 
                 return device
             else:
