@@ -9,14 +9,19 @@ Layout rules, chosen so that different modules' wires never cross:
 - The breadboard stands upright. Rails run top to bottom: logic ground and
   3.3 V on the left, motor ground and motor supply on the right.
 - A 16-pin stepstick straddles the trench, one 8-pin column on row ``b``
-  and one on row ``f`` (0.6 inch apart). Modules stack top to bottom in
-  YAML order, so they should be listed in the order their signals leave
-  the header.
-- Each module's header wires travel as one ribbon, sorted by landing
-  height, from beside the header to row ``a`` beside the module.
-- Rail power reaches a module as a short stub (MS1, MS2, VM, VM GND) or
-  a lane over the top of the module (VIO, signal ground), never across
-  another module's ribbon.
+  and one on row ``f`` (0.6 inch apart), seated as the silkscreen reads
+  from above: EN top left, DIR bottom left, VM top right, GND bottom
+  right. Modules stack top to bottom in YAML order, so they should be
+  listed in the order their signals leave the header.
+- Each module's header wires travel as one ribbon, sorted by header
+  height, from beside the header to row ``a`` beside the module. A wire
+  whose pin sits above the pins of wires that leave the header before it
+  (EN, the top pin, with STEP and DIR at the bottom) cannot reach its row
+  without crossing them, so it lands below the ribbon and climbs the left
+  edge of the breadboard to its row: one deliberate hop per module instead
+  of a tangle.
+- Rail power reaches a module as a short stub (MS1, MS2, VM, both GNDs)
+  or a lane under the module (VIO), never across another module's ribbon.
 - A motor sits beside its own module; coil leads are straight.
 - Logic GND and motor MGND are tied at the bottom of the board whenever
   MGND is used; PinViz rejects a Rails-to-Rails connection as a cycle.
@@ -33,10 +38,13 @@ import drawsvg as draw
 
 from .model import Connection, Device, Diagram
 
-# BIGTREETECH TMC2209 V1.3 silkscreen, seated with DIR at the top of the board.
-STEPSTICK_LEFT = ("DIR", "STEP", "CLK", "TX", "RX", "MS2", "MS1", "EN")
-STEPSTICK_RIGHT = ("IOGND", "VIO", "B2", "B1", "A1", "A2", "VMGND", "VM")
+# BIGTREETECH TMC2209 V1.2/V1.3 silkscreen viewed from above, both columns top
+# to bottom: EN top left, DIR bottom left, VM top right, GND bottom right.
+STEPSTICK_LEFT = ("EN", "MS1", "MS2", "PDN_UART", "PDN_UART_ALT", "CLK", "STEP", "DIR")
+STEPSTICK_RIGHT = ("VM", "VMGND", "2B", "2A", "1A", "1B", "VIO", "IOGND")
 STEPSTICK_PINS = STEPSTICK_LEFT + STEPSTICK_RIGHT
+# Silkscreen text for pins whose PinViz names had to be made unique.
+STEPSTICK_LABELS = {"PDN_UART_ALT": "PDN_UART", "VMGND": "GND", "IOGND": "GND"}
 
 RAIL_PINS = ("GND", "+3V3", "MGND", "+24V")
 
@@ -167,7 +175,8 @@ class BreadboardRenderer:
         )
         self.geo = Geometry(left=header_right + 308, top=70, rows=rows)
         self.x_fan = header_right + 60
-        self.x_ribbon_end = self.geo.x["GND"] - 30
+        self.x_ribbon_end = self.geo.x["GND"] - 48
+        self.x_hop = self.geo.x["GND"] - 31
         self.motor_x = self.geo.x["+24V"] + 58
 
         width = self.motor_x + 150
@@ -306,7 +315,7 @@ class BreadboardRenderer:
                 x0, y0, x1 - x0, y1 - y0, rx=4, fill="#2B241C", stroke="#1A140F", stroke_width=1
             )
         )
-        shown = {"IOGND": "GND", "VMGND": "GND"}
+        shown = STEPSTICK_LABELS
         for index in range(8):
             y = geo.y(top + index)
             c.append(
@@ -315,9 +324,10 @@ class BreadboardRenderer:
             c.append(
                 draw.Circle(geo.x["f"], y, 3.6, fill="#E6C36A", stroke="#8A6A22", stroke_width=0.6)
             )
+            left = STEPSTICK_LEFT[index]
             c.append(
                 draw.Text(
-                    STEPSTICK_LEFT[index],
+                    shown.get(left, left),
                     10.5,
                     geo.x["b"] + 8,
                     y + 4,
@@ -339,13 +349,15 @@ class BreadboardRenderer:
                     fill="#F4EFE4",
                 )
             )
-        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        # The name sits between the short labels of rows 1 and 2 (MS1/GND,
+        # MS2/2B); rows 3 and 4 carry the long PDN_UART text.
+        cx = (x0 + x1) / 2
         c.append(
             draw.Text(
                 module.name,
                 13,
                 cx,
-                cy - 2,
+                geo.y(top + 1) + 5,
                 text_anchor="middle",
                 font_family=FONT,
                 font_weight="bold",
@@ -354,7 +366,13 @@ class BreadboardRenderer:
         )
         c.append(
             draw.Text(
-                "TMC2209", 9, cx, cy + 12, text_anchor="middle", font_family=FONT, fill="#CFC6B6"
+                "TMC2209",
+                9,
+                cx,
+                geo.y(top + 2) + 4,
+                text_anchor="middle",
+                font_family=FONT,
+                fill="#CFC6B6",
             )
         )
 
@@ -586,7 +604,7 @@ class BreadboardRenderer:
                 if _role(target) == "module":
                     _x, _y, row = self._module_pin_xy(target, target_pin)
                     land = (
-                        geo.y(self.module_row[target.name]) - 1.5 * p
+                        geo.y(self.module_row[target.name] + 7) + 2.5 * p
                         if target_pin == "IOGND"
                         else geo.y(row)
                     )
@@ -704,13 +722,32 @@ class BreadboardRenderer:
     def _draw_bundle(
         self, module: Device, wires: list[tuple[Connection, float, float, float, str]]
     ) -> None:
-        geo = self.geo
+        """One ribbon from the header to the module, in header order.
+
+        The ribbon stays flat (no wire crosses another) as long as the pins
+        land in the same top-to-bottom order they leave the header. A wire
+        whose pin is above an earlier wire's pin (EN, the top pin, after
+        STEP and DIR) is a hopper: it lands below everything that came
+        before it and climbs the left edge of the board to its row, so the
+        only crossing is that one visible hop.
+        """
+        geo, p = self.geo, self.geo.pitch
         wires = sorted(wires, key=lambda item: (round(item[2]), item[1]))
         center = sum(item[2] for item in wires) / len(wires)
-        top = self.module_row[module.name]
-        for index, (connection, px, py, land, color) in enumerate(wires):
-            lane = center + (index - (len(wires) - 1) / 2) * RIBBON_SPACING
-            k = 0.45 * (self.x_ribbon_end - self.x_fan)
+        k = 0.45 * (self.x_ribbon_end - self.x_fan)
+        routed: list[tuple[Connection, float, float, float, str, float | None]] = []
+        floor = None
+        hops = 0
+        for connection, px, py, land, color in wires:
+            hop_x = None
+            if floor is not None and land < floor - 1:
+                hops += 1
+                hop_x = self.x_hop - (hops - 1) * RIBBON_SPACING
+                land = floor + 0.9 * p
+            floor = land if floor is None else max(floor, land)
+            routed.append((connection, px, py, land, color, hop_x))
+        for index, (connection, px, py, land, color, hop_x) in enumerate(routed):
+            lane = center + (index - (len(routed) - 1) / 2) * RIBBON_SPACING
             shares_row = any(abs(other[2] - py) < 1 and other[1] > px for other in wires)
             lead, sx, sy = self._fan_start(px, py, lane, over=shares_row)
             head = (
@@ -719,12 +756,19 @@ class BreadboardRenderer:
             )
             pin = connection.device_pin_name or ""
             if pin == "IOGND":
-                end_x, end_y = geo.x["i"], geo.y(top)
+                # Bottom-right pin: run under the module and up into its row.
+                end_x, end_y, _row = self._module_pin_xy(module, pin)
+                end_x = geo.x["i"]
                 tail = _rounded([(self.x_ribbon_end, land), (end_x, land), (end_x, end_y)])
             else:
                 end_x, end_y, _row = self._module_pin_xy(module, pin)
                 end_x = geo.x["a"]
-                tail = _rounded([(self.x_ribbon_end, land), (end_x, end_y)])
+                if hop_x is None:
+                    tail = _rounded([(self.x_ribbon_end, land), (end_x, end_y)])
+                else:
+                    tail = _rounded(
+                        [(self.x_ribbon_end, land), (hop_x, land), (hop_x, end_y), (end_x, end_y)]
+                    )
             self._wire(head + " " + tail.replace("M", "L", 1), color)
             self._dot(end_x, end_y, color)
 
@@ -740,11 +784,20 @@ class BreadboardRenderer:
         elif pin == "VIO":
             if rail != "+3V3":
                 raise ValueError(f"{module.name}.VIO should tie to the 3.3 V rail")
-            lane_y = geo.y(top - 3)
-            lane_x = geo.x["j"] + 0.8 * p
-            points = [(geo.x["+3V3"], lane_y), (lane_x, lane_y), (lane_x, y), (geo.x["j"], y)]
+            # VIO is the second pin from the bottom on the right. The lane runs
+            # under the module from the 3.3 V rail and climbs between holes g
+            # and h, clear of the GND stub leaving column j on the bottom row.
+            lane_y = geo.y(top + 7) + 1.5 * p
+            lane_x = geo.x["g"] + 0.5 * p
+            points = [(geo.x["+3V3"], lane_y), (lane_x, lane_y), (lane_x, y), (geo.x["g"], y)]
             end = points[-1]
-        elif pin in ("VM", "VMGND"):
+        elif pin in ("VM", "VMGND", "IOGND"):
+            if pin != "VM" and rail != "MGND":
+                raise ValueError(
+                    f"{module.name}.{pin} should tie to the right-hand ground rail (MGND)"
+                )
+            if pin == "VM" and rail != "+24V":
+                raise ValueError(f"{module.name}.VM should tie to the +24V rail")
             points = [(geo.x["j"], y), (geo.x[rail], y)]
             end = points[0]
         else:

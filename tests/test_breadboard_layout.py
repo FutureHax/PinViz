@@ -2,8 +2,16 @@
 
 import pytest
 
-from pinviz.breadboard import module_row_offset, stepstick_seat
+from pinviz.breadboard import (
+    STEPSTICK_LABELS,
+    STEPSTICK_LEFT,
+    STEPSTICK_RIGHT,
+    BreadboardRenderer,
+    module_row_offset,
+    stepstick_seat,
+)
 from pinviz.config_loader import ConfigLoader
+from pinviz.devices import get_registry
 from pinviz.model import Device
 from pinviz.render_svg import SVGRenderer
 
@@ -47,13 +55,25 @@ def _render(tmp_path, extra_devices="", extra_connections=""):
     return diagram, output.read_text(encoding="utf-8")
 
 
-def test_stepstick_seats_with_dir_at_the_top():
+def test_stepstick_seats_as_the_silkscreen_reads():
+    """EN top left, DIR bottom left, VM top right, GND bottom right."""
     device = Device(name="D1", pins=[], type_id="tmc2209")
-    assert stepstick_seat(device, "DIR") == ("b", 0)
-    assert stepstick_seat(device, "STEP") == ("b", 1)
-    assert stepstick_seat(device, "EN") == ("b", 7)
-    assert stepstick_seat(device, "IOGND") == ("f", 0)
-    assert module_row_offset(device, "VM") == 7
+    assert STEPSTICK_LEFT == ("EN", "MS1", "MS2", "PDN_UART", "PDN_UART_ALT", "CLK", "STEP", "DIR")
+    assert STEPSTICK_RIGHT == ("VM", "VMGND", "2B", "2A", "1A", "1B", "VIO", "IOGND")
+    assert stepstick_seat(device, "EN") == ("b", 0)
+    assert stepstick_seat(device, "STEP") == ("b", 6)
+    assert stepstick_seat(device, "DIR") == ("b", 7)
+    assert stepstick_seat(device, "VM") == ("f", 0)
+    assert stepstick_seat(device, "VIO") == ("f", 6)
+    assert module_row_offset(device, "IOGND") == 7
+
+
+def test_stepstick_part_matches_the_seat_order():
+    """The device JSON lists the pins in the same order the renderer seats them."""
+    device = get_registry().create("tmc2209")
+    names = tuple(pin.name for pin in device.pins)
+    assert names == STEPSTICK_LEFT + STEPSTICK_RIGHT
+    assert STEPSTICK_LABELS == {"PDN_UART_ALT": "PDN_UART", "VMGND": "GND", "IOGND": "GND"}
 
 
 def test_unknown_stepstick_pin_is_rejected():
@@ -94,4 +114,42 @@ def test_floating_part_fails_the_render(tmp_path):
             extra_devices="""  - type: electrolytic
     name: C1
     breadboard: {role: capacitor}""",
+        )
+
+
+def test_en_hops_up_the_board_edge_to_the_top_pin(tmp_path):
+    """EN leaves the header after STEP and DIR but is the top pin, so it lands
+    below the ribbon and climbs the left edge once instead of crossing them."""
+    _diagram, text = _render(
+        tmp_path,
+        extra_connections="""  - {board_pin: 38, device: D1, device_pin: DIR, color: "#1F9D55"}
+  - {board_pin: 40, device: D1, device_pin: EN, color: "#7C3AED"}
+  - from: {device: Rails, device_pin: MGND}
+    to: {device: D1, device_pin: VMGND}
+    color: "#1A1A1A"
+  - from: {device: Rails, device_pin: MGND}
+    to: {device: D1, device_pin: IOGND}
+    color: "#1A1A1A"
+  - from: {device: Rails, device_pin: "+3V3"}
+    to: {device: D1, device_pin: VIO}
+    color: "#F08C00\"""",
+    )
+    assert "40 EN D1" in text
+    assert "PDN_UART" in text
+    renderer = BreadboardRenderer()
+    renderer.render(_diagram, tmp_path / "again.svg")
+    y_en = renderer.geo.y(renderer.module_row["D1"])
+    y_dir = renderer.geo.y(renderer.module_row["D1"] + 7)
+    # The hop turns the corner at the board edge, on the EN row, below DIR.
+    assert f"Q {renderer.x_hop:.1f} {y_en:.1f}" in text
+    assert f"Q {renderer.x_hop:.1f} {y_dir + 0.9 * renderer.geo.pitch:.1f}" in text
+
+
+def test_logic_gnd_must_use_the_right_hand_rail(tmp_path):
+    with pytest.raises(ValueError, match="right-hand ground rail"):
+        _render(
+            tmp_path,
+            extra_connections="""  - from: {device: Rails, device_pin: GND}
+    to: {device: D1, device_pin: IOGND}
+    color: "#1A1A1A\"""",
         )
