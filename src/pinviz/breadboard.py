@@ -21,7 +21,7 @@ Layout rules, chosen so that different modules' wires never cross:
   edge of the breadboard to its row: one deliberate hop per module instead
   of a tangle.
 - Rail power reaches a module as a short stub (MS1, MS2, VM, both GNDs)
-  or a lane under the module (VIO), never across another module's ribbon.
+  or a lane under the module (VDD), never across another module's ribbon.
 - A motor sits beside its own module; coil leads are straight.
 - Logic GND and motor MGND are tied at the bottom of the board whenever
   MGND is used; PinViz rejects a Rails-to-Rails connection as a cycle.
@@ -40,11 +40,12 @@ from .model import Connection, Device, Diagram
 
 # BIGTREETECH TMC2209 V1.2/V1.3 silkscreen viewed from above, both columns top
 # to bottom: EN top left, DIR bottom left, VM top right, GND bottom right.
-STEPSTICK_LEFT = ("EN", "MS1", "MS2", "PDN_UART", "PDN_UART_ALT", "CLK", "STEP", "DIR")
-STEPSTICK_RIGHT = ("VM", "VMGND", "2B", "2A", "1A", "1B", "VIO", "IOGND")
+STEPSTICK_LEFT = ("EN", "MS1", "MS2", "PDN", "PDN_ALT", "CLK", "STEP", "DIR")
+STEPSTICK_RIGHT = ("VM", "VMGND", "A2", "A1", "B1", "B2", "VDD", "IOGND")
 STEPSTICK_PINS = STEPSTICK_LEFT + STEPSTICK_RIGHT
-# Silkscreen text for pins whose PinViz names had to be made unique.
-STEPSTICK_LABELS = {"PDN_UART_ALT": "PDN_UART", "VMGND": "GND", "IOGND": "GND"}
+# Card text for pins whose names had to be made unique. The board silkscreen
+# prints 2B/2A/1A/1B/VIO where the card (and these names) say A2/A1/B1/B2/VDD.
+STEPSTICK_LABELS = {"PDN_ALT": "PDN", "VMGND": "GND", "IOGND": "GND"}
 
 RAIL_PINS = ("GND", "+3V3", "MGND", "+24V")
 
@@ -349,15 +350,13 @@ class BreadboardRenderer:
                     fill="#F4EFE4",
                 )
             )
-        # The name sits between the short labels of rows 1 and 2 (MS1/GND,
-        # MS2/2B); rows 3 and 4 carry the long PDN_UART text.
-        cx = (x0 + x1) / 2
+        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
         c.append(
             draw.Text(
                 module.name,
                 13,
                 cx,
-                geo.y(top + 1) + 5,
+                cy - 2,
                 text_anchor="middle",
                 font_family=FONT,
                 font_weight="bold",
@@ -366,13 +365,7 @@ class BreadboardRenderer:
         )
         c.append(
             draw.Text(
-                "TMC2209",
-                9,
-                cx,
-                geo.y(top + 2) + 4,
-                text_anchor="middle",
-                font_family=FONT,
-                fill="#CFC6B6",
+                "TMC2209", 9, cx, cy + 12, text_anchor="middle", font_family=FONT, fill="#CFC6B6"
             )
         )
 
@@ -781,10 +774,10 @@ class BreadboardRenderer:
                 raise ValueError(f"{module.name}.{pin} should tie to the 3.3 V rail")
             points = [(geo.x["+3V3"], y), (geo.x["a"], y)]
             end = points[-1]
-        elif pin == "VIO":
+        elif pin == "VDD":
             if rail != "+3V3":
-                raise ValueError(f"{module.name}.VIO should tie to the 3.3 V rail")
-            # VIO is the second pin from the bottom on the right. The lane runs
+                raise ValueError(f"{module.name}.VDD should tie to the 3.3 V rail")
+            # VDD is the second pin from the bottom on the right. The lane runs
             # under the module from the 3.3 V rail and climbs between holes g
             # and h, clear of the GND stub leaving column j on the bottom row.
             lane_y = geo.y(top + 7) + 1.5 * p

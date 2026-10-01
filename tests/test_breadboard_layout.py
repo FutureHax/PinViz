@@ -58,13 +58,14 @@ def _render(tmp_path, extra_devices="", extra_connections=""):
 def test_stepstick_seats_as_the_silkscreen_reads():
     """EN top left, DIR bottom left, VM top right, GND bottom right."""
     device = Device(name="D1", pins=[], type_id="tmc2209")
-    assert STEPSTICK_LEFT == ("EN", "MS1", "MS2", "PDN_UART", "PDN_UART_ALT", "CLK", "STEP", "DIR")
-    assert STEPSTICK_RIGHT == ("VM", "VMGND", "2B", "2A", "1A", "1B", "VIO", "IOGND")
+    assert STEPSTICK_LEFT == ("EN", "MS1", "MS2", "PDN", "PDN_ALT", "CLK", "STEP", "DIR")
+    assert STEPSTICK_RIGHT == ("VM", "VMGND", "A2", "A1", "B1", "B2", "VDD", "IOGND")
     assert stepstick_seat(device, "EN") == ("b", 0)
     assert stepstick_seat(device, "STEP") == ("b", 6)
     assert stepstick_seat(device, "DIR") == ("b", 7)
     assert stepstick_seat(device, "VM") == ("f", 0)
-    assert stepstick_seat(device, "VIO") == ("f", 6)
+    assert stepstick_seat(device, "A2") == ("f", 2)
+    assert stepstick_seat(device, "VDD") == ("f", 6)
     assert module_row_offset(device, "IOGND") == 7
 
 
@@ -73,7 +74,7 @@ def test_stepstick_part_matches_the_seat_order():
     device = get_registry().create("tmc2209")
     names = tuple(pin.name for pin in device.pins)
     assert names == STEPSTICK_LEFT + STEPSTICK_RIGHT
-    assert STEPSTICK_LABELS == {"PDN_UART_ALT": "PDN_UART", "VMGND": "GND", "IOGND": "GND"}
+    assert STEPSTICK_LABELS == {"PDN_ALT": "PDN", "VMGND": "GND", "IOGND": "GND"}
 
 
 def test_unknown_stepstick_pin_is_rejected():
@@ -131,11 +132,14 @@ def test_en_hops_up_the_board_edge_to_the_top_pin(tmp_path):
     to: {device: D1, device_pin: IOGND}
     color: "#1A1A1A"
   - from: {device: Rails, device_pin: "+3V3"}
-    to: {device: D1, device_pin: VIO}
+    to: {device: D1, device_pin: VDD}
     color: "#F08C00\"""",
     )
     assert "40 EN D1" in text
-    assert "PDN_UART" in text
+    assert ">PDN<" in text
+    assert "PDN_UART" not in text
+    assert ">VDD<" in text
+    assert ">A2<" in text and ">A1<" in text and ">B1<" in text and ">B2<" in text
     renderer = BreadboardRenderer()
     renderer.render(_diagram, tmp_path / "again.svg")
     y_en = renderer.geo.y(renderer.module_row["D1"])

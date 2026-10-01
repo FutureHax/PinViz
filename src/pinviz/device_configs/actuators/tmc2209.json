@@ -2,7 +2,7 @@
   "id": "tmc2209",
   "name": "TMC2209 stepstick",
   "category": "actuators",
-  "description": "16-pin TMC2209 stepstick in standalone STEP/DIR. Viewed from above with the headers on the long sides: left column top to bottom EN, MS1, MS2, PDN_UART, PDN_UART, CLK, STEP, DIR; right column top to bottom VM, GND, 2B, 2A, 1A, 1B, VIO, GND (BIGTREETECH V1.2/V1.3 silkscreen).",
+  "description": "16-pin TMC2209 stepstick in standalone STEP/DIR. Viewed from above with the headers on the long sides, matching the BIGTREETECH pinout card: left column top to bottom EN, MS1, MS2, PDN, PDN, CLK, STEP, DIR; right column top to bottom VM, GND, A2, A1, B1, B2, VDD, GND.",
   "datasheet_url": "https://github.com/bigtreetech/BIGTREETECH-TMC2209-V1.2",
   "pins": [
     {
@@ -21,12 +21,12 @@
       "side": "left"
     },
     {
-      "name": "PDN_UART",
+      "name": "PDN",
       "role": "GPIO",
       "side": "left"
     },
     {
-      "name": "PDN_UART_ALT",
+      "name": "PDN_ALT",
       "role": "GPIO",
       "side": "left"
     },
@@ -56,27 +56,27 @@
       "side": "right"
     },
     {
-      "name": "2B",
+      "name": "A2",
       "role": "GPIO",
       "side": "right"
     },
     {
-      "name": "2A",
+      "name": "A1",
       "role": "GPIO",
       "side": "right"
     },
     {
-      "name": "1A",
+      "name": "B1",
       "role": "GPIO",
       "side": "right"
     },
     {
-      "name": "1B",
+      "name": "B2",
       "role": "GPIO",
       "side": "right"
     },
     {
-      "name": "VIO",
+      "name": "VDD",
       "role": "3V3",
       "side": "right"
     },
@@ -86,5 +86,5 @@
       "side": "right"
     }
   ],
-  "notes": "Breadboard footprint is a 2x8 header, 0.1 inch along the length and 0.6 inch between the two rows, so it straddles a solderless breadboard from row b to row f. Pin names must be unique, so the two PDN_UART pins are PDN_UART (header pin 4, the factory UART pin) and PDN_UART_ALT (pin 5), and the two GND pins are VMGND (top right, next to VM) and IOGND (bottom right, next to VIO); the breadboard renderer prints the silkscreen text for all four. 2B/2A/1A/1B are the silkscreen M2B/M2A/M1A/M1B; the BIGTREETECH manual table calls the same positions A2, A1, B1, B2. MS1 and MS2 both at VIO is 1/16. VM is the motor supply (the 5V role is the nearest PinViz power role; label it 24 V in the diagram)."
+  "notes": "Breadboard footprint is a 2x8 header, 0.1 inch along the length and 0.6 inch between the two rows, so it straddles a solderless breadboard from row b to row f. Pin names must be unique, so the two PDN pins are PDN (header pin 4, the factory UART pin) and PDN_ALT (pin 5), and the two GND pins are VMGND (beside VM) and IOGND (beside VDD). The breadboard renderer prints PDN and GND for all four, which is what the BIGTREETECH pinout card shows. The board silkscreen prints 2B, 2A, 1A, 1B, and VIO for the pins the card calls A2, A1, B1, B2, and VDD. MS1 and MS2 both at VDD is 1/16. VM is the motor supply (the 5V role is the nearest PinViz power role; label it 24 V in the diagram)."
 }
