@@ -7,6 +7,7 @@ from pinviz.breadboard import (
     STEPSTICK_LEFT,
     STEPSTICK_RIGHT,
     BreadboardRenderer,
+    _is_white,
     module_row_offset,
     stepstick_seat,
 )
@@ -147,6 +148,18 @@ def test_en_hops_up_the_board_edge_to_the_top_pin(tmp_path):
     # The hop turns the corner at the board edge, on the EN row, below DIR.
     assert f"Q {renderer.x_hop:.1f} {y_en:.1f}" in text
     assert f"Q {renderer.x_hop:.1f} {y_dir + 0.9 * renderer.geo.pitch:.1f}" in text
+
+
+def test_white_wire_keeps_a_dark_edge(tmp_path):
+    assert _is_white("#FFFFFF")
+    assert _is_white("#fff")
+    assert not _is_white("#1F9D55")
+    _diagram, text = _render(
+        tmp_path,
+        extra_connections="""  - {board_pin: 38, device: D1, device_pin: DIR, color: "#FFFFFF"}""",
+    )
+    assert 'stroke="#1A1A1A"' in text
+    assert 'stroke="#FFFFFF"' in text
 
 
 def test_logic_gnd_must_use_the_right_hand_rail(tmp_path):

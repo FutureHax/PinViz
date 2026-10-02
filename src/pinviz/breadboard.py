@@ -113,6 +113,25 @@ def _role(device: Device) -> str:
     return (device.placement or {}).get("role", "module")
 
 
+def _is_white(color: str) -> bool:
+    """True for a wire color that would vanish on the white page."""
+    text = color.strip().lower()
+    if text in {"#fff", "#ffffff", "white"}:
+        return True
+    if text.startswith("#") and len(text) in {4, 7}:
+        hexpart = text[1:]
+        if len(hexpart) == 3:
+            hexpart = "".join(char * 2 for char in hexpart)
+        try:
+            red = int(hexpart[0:2], 16)
+            green = int(hexpart[2:4], 16)
+            blue = int(hexpart[4:6], 16)
+        except ValueError:
+            return False
+        return red >= 250 and green >= 250 and blue >= 250
+    return False
+
+
 def _rounded(points: list[tuple[float, float]], radius: float = 7.0) -> str:
     """Polyline path with rounded corners."""
     if len(points) < 2:
@@ -528,6 +547,30 @@ class BreadboardRenderer:
     # Wires -----------------------------------------------------------------
 
     def _wire(self, path: str, color: str) -> None:
+        # A white jumper sits on a white page, so it gets a thin dark edge
+        # instead of the usual white halo.
+        if _is_white(color):
+            self.canvas.append(
+                draw.Path(
+                    path,
+                    stroke="#1A1A1A",
+                    stroke_width=4.4,
+                    fill="none",
+                    stroke_linecap="round",
+                    stroke_linejoin="round",
+                )
+            )
+            self.canvas.append(
+                draw.Path(
+                    path,
+                    stroke="#FFFFFF",
+                    stroke_width=2.4,
+                    fill="none",
+                    stroke_linecap="round",
+                    stroke_linejoin="round",
+                )
+            )
+            return
         self.canvas.append(
             draw.Path(
                 path,
@@ -550,7 +593,8 @@ class BreadboardRenderer:
         )
 
     def _dot(self, x: float, y: float, color: str) -> None:
-        self.canvas.append(draw.Circle(x, y, 3.6, fill=color, stroke="#FFFFFF", stroke_width=1))
+        stroke = "#1A1A1A" if _is_white(color) else "#FFFFFF"
+        self.canvas.append(draw.Circle(x, y, 3.6, fill=color, stroke=stroke, stroke_width=1))
 
     def _module_pin_xy(self, module: Device, pin: str) -> tuple[float, float, int]:
         column, offset = stepstick_seat(module, pin)
@@ -859,7 +903,7 @@ class BreadboardRenderer:
                         font_family=FONT,
                         font_weight="bold",
                         fill=colors[pin],
-                        stroke="#FFFFFF",
+                        stroke="#1A1A1A" if _is_white(colors[pin]) else "#FFFFFF",
                         stroke_width=3.5,
                         paint_order="stroke",
                     )
@@ -869,7 +913,7 @@ class BreadboardRenderer:
     def _draw_key(self, height: float) -> None:
         items = (
             ("#E2B000", "STEP"),
-            ("#1F9D55", "DIR"),
+            ("#FFFFFF", "DIR"),
             ("#7C3AED", "EN"),
             ("#1A1A1A", "GND"),
             ("#F08C00", "3.3 V"),
@@ -877,6 +921,12 @@ class BreadboardRenderer:
         )
         x, y = 24.0, height - 30
         for color, name in items:
+            if _is_white(color):
+                self.canvas.append(
+                    draw.Line(
+                        x, y, x + 22, y, stroke="#1A1A1A", stroke_width=6, stroke_linecap="round"
+                    )
+                )
             self.canvas.append(
                 draw.Line(x, y, x + 22, y, stroke=color, stroke_width=4, stroke_linecap="round")
             )
